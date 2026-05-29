@@ -2,6 +2,16 @@
 
 Homebridge GPIO device expose several HomeKit accessories interacting with GPIO
 
+# Apple Home automations
+
+All accessories expose a unique serial number and report an initial state at startup, so they appear in the Apple Home **Automation** picker as triggers and conditions.
+
+Input accessories (`ContactSensor`, `MotionSensor`, `LeakSensor`, etc.) and `ProgrammableSwitch` emit state-change events and can be used directly as automation triggers ("When this happens").
+
+Output accessories (`Switch`, `Lightbulb`, `Outlet`, `Fan`, `Valve`, `LockMechanism`, ...) can always be used as automation **actions**. To also use them as **triggers**, wire the relay/contact state back to a GPIO and set the optional `inputPin` parameter — the accessory then reports real state changes and becomes trigger-capable. Without `inputPin` there is no state feedback, so an output can be controlled by automations but cannot trigger them.
+
+Note: `Speaker`, `Microphone`, and `Doorbell` are not first-class services in the Apple Home app and will not appear in automations regardless. Use `StatelessProgrammableSwitch` for button-press triggers.
+
 # Installation
 
 1. Install latest NodeJS 10.x (tested with 10.19.0)

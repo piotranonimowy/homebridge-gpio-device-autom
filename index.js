@@ -104,7 +104,9 @@ function DeviceAccesory(log, config) {
 	var infoService = new Service.AccessoryInformation();
 	infoService.setCharacteristic(Characteristic.Manufacturer, 'Raspberry')
 	infoService.setCharacteristic(Characteristic.Model, config.type)
-	//infoService.setCharacteristic(Characteristic.SerialNumber, 'Raspberry');
+	infoService.setCharacteristic(Characteristic.SerialNumber,
+		config.type + '-' + (config.hasOwnProperty('pin') ? config.pin : (config.pins || []).join('-')));
+	infoService.setCharacteristic(Characteristic.FirmwareRevision, '0.4.9');
 	this.services.push(infoService);
 
 	switch (config.type) {
@@ -221,6 +223,9 @@ function DigitalInput(accesory, log, config) {
 
 	accesory.addService(service);
 
+	/* Report an initial value so Apple Home lists the accessory as an automation trigger/condition */
+	this.stateCharac.updateValue(gpio.read(this.pin) == this.INPUT_ACTIVE ? this.ON_STATE : this.OFF_STATE);
+
 	/* Occupancy sensor for MotionSensor */
 	if (config.occupancy) {
 		if (!config.occupancy.name) throw new Error("'name' parameter is missing for occupancy");
@@ -336,6 +341,9 @@ function DigitalOutput(accesory, log, config) {
 	this.stateCharac
 		.on('set', this.setState.bind(this))
 		.on('get', this.getState.bind(this));
+
+	/* Report an initial value so Apple Home lists the accessory as an automation trigger/condition */
+	this.stateCharac.updateValue(this.initState ? this.ON_STATE : this.OFF_STATE);
 
 	if (config.subType && config.type == 'Valve') {
 		var type = Characteristic.ValveType.GENERIC_VALVE;
