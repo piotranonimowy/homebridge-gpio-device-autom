@@ -291,6 +291,7 @@ function DigitalOutput(accesory, log, config) {
 	this.inputPin = config.inputPin !== undefined ? config.inputPin : null;
 	this.pullUp = config.pullUp !== undefined ? config.pullUp : true;
 	this.mirrorCharac = null;
+	this.switchCharac = null;
 
 	this.OUTPUT_ACTIVE = this.inverted ? LOW : HIGH;
 	this.OUTPUT_INACTIVE = this.inverted ? HIGH : LOW;
@@ -372,20 +373,40 @@ function DigitalOutput(accesory, log, config) {
 		}
 	}
 
-	/* Optional linked ContactSensor mirroring the on/off state, so Apple Home can use
+	/* Register the controllable service FIRST and mark it primary so Apple Home keeps
+	   classifying the accessory as controllable (it stays selectable as an automation ACTION). */
+	if (typeof service.setPrimaryService === 'function') {
+		service.setPrimaryService(true);
+	}
+	accesory.addService(service);
+
+	/* Optional ContactSensor mirroring the on/off state, so Apple Home can also use
 	   this output as an automation TRIGGER (valves/faucets are otherwise action-only).
 	   Enable with "stateSensor": true (or a string to name it) in the accessory config.
-	   Mapping: state ON  -> contact NOT_DETECTED ("Open"); OFF -> DETECTED ("Closed"). */
+	   Mapping: state ON  -> contact NOT_DETECTED ("Open"); OFF -> DETECTED ("Closed").
+	   Added as an independent (non-linked) service so it does not mask the valve. */
 	if (config.stateSensor) {
 		var mirrorName = (typeof config.stateSensor === 'string') ? config.stateSensor : (config.name + ' State');
 		var mirrorService = new Service.ContactSensor(mirrorName, 'statesensor');
 		this.mirrorCharac = mirrorService.getCharacteristic(Characteristic.ContactSensorState);
 		this.mirrorCharac.updateValue(this.initState ? Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
-		service.addLinkedService(mirrorService);
 		accesory.addService(mirrorService);
 	}
 
-	accesory.addService(service);
+	/* Optional companion Switch that drives the same GPIO, so Apple Home can use this
+	   output as an automation ACTION (Apple's Home app does not expose Valve/Faucet
+	   accessories to its automation engine). Enable with "controlSwitch": true (or a
+	   string to name it). The switch and the valve stay in sync in both directions. */
+	if (config.controlSwitch) {
+		var switchName = (typeof config.controlSwitch === 'string') ? config.controlSwitch : (config.name + ' Control');
+		var switchService = new Service.Switch(switchName, 'controlswitch');
+		this.switchCharac = switchService.getCharacteristic(Characteristic.On);
+		this.switchCharac.updateValue(this.initState ? true : false);
+		this.switchCharac
+			.on('set', this.setSwitch.bind(this))
+			.on('get', this.getState.bind(this));
+		accesory.addService(switchService);
+	}
 }
 
 DigitalOutput.prototype = {
@@ -401,6 +422,9 @@ DigitalOutput.prototype = {
 				}
 				if (this.mirrorCharac && this.inputPin === null) {
 					this.mirrorCharac.updateValue(this.initState ? Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
+				}
+				if (this.switchCharac) {
+					this.switchCharac.updateValue(this.initState ? true : false);
 				}
 			}.bind(this), this.duration * 1000);
 			this.service.getCharacteristic(Characteristic.RemainingDuration).setValue(this.duration);
@@ -418,8 +442,18 @@ DigitalOutput.prototype = {
 		if (this.mirrorCharac && this.inputPin === null) {
 			this.mirrorCharac.updateValue(value ? Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
 		}
+		/* Keep the valve tile and the companion switch in sync regardless of which one was used */
+		this.stateCharac.updateValue(value ? this.ON_STATE : this.OFF_STATE);
+		if (this.switchCharac) {
+			this.switchCharac.updateValue(value ? true : false);
+		}
 
 		callback();
+	},
+
+	setSwitch: function (value, callback) {
+		/* Drive the shared GPIO through the same path as the valve (pin + duration timer + mirrors) */
+		this.setState(value ? this.ON_STATE : this.OFF_STATE, callback);
 	},
 
 	getState: async function (callback) {
@@ -450,6 +484,9 @@ DigitalOutput.prototype = {
 		}
 		if (this.mirrorCharac) {
 			this.mirrorCharac.updateValue(state == this.INPUT_ACTIVE ? Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
+		}
+		if (this.switchCharac) {
+			this.switchCharac.updateValue(state == this.INPUT_ACTIVE ? true : false);
 		}
 	}
 }

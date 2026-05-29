@@ -10,6 +10,10 @@ Input accessories (`ContactSensor`, `MotionSensor`, `LeakSensor`, etc.) and `Pro
 
 Output accessories (`Switch`, `Lightbulb`, `Outlet`, `Fan`, `Valve`, `LockMechanism`, ...) can always be used as automation **actions**. To also use them as **triggers**, wire the relay/contact state back to a GPIO and set the optional `inputPin` parameter — the accessory then reports real state changes and becomes trigger-capable. Without `inputPin` there is no state feedback, so an output can be controlled by automations but cannot trigger them.
 
+Apple Home does not offer `Valve`/`Faucet` accessories as automation triggers (they are action-only). To trigger automations from a valve, add `"stateSensor": true` to the accessory config: the plugin exposes a linked `ContactSensor` that shadows the on/off state (ON → "Open", OFF → "Closed"), which Apple Home always accepts as a trigger. Set `"stateSensor": "My Name"` to choose the sensor name. The mirror follows real hardware state when `inputPin` is set, otherwise it follows the commanded state. This option works on any output type.
+
+Apple Home also does not expose `Valve`/`Faucet` accessories to its automation engine as **actions** (they can be controlled manually but are not selectable when choosing accessories for an automation). To control a valve from an automation, add `"controlSwitch": true`: the plugin exposes a companion `Switch` that drives the same GPIO and stays in sync with the valve in both directions. Select that switch as the controlled accessory in the automation. Set `"controlSwitch": "My Name"` to choose its name. Combine `stateSensor` and `controlSwitch` to use a valve as both trigger and action.
+
 Note: `Speaker`, `Microphone`, and `Doorbell` are not first-class services in the Apple Home app and will not appear in automations regardless. Use `StatelessProgrammableSwitch` for button-press triggers.
 
 # Installation
@@ -18,7 +22,7 @@ Note: `Speaker`, `Microphone`, and `Doorbell` are not first-class services in th
 2. Install homebridge using: `npm install -g homebridge`
 3. Install wiringPi using: `sudo apt-get install wiringpi`
 3. Add rights to homebridge user if running homebridge as systemd service: `sudo usermod -a -G gpio homebridge`
-4. Install this plugin using: `sudo npm install -g homebridge-gpio-device --unsafe-perm`
+4. Install this plugin using: `sudo npm install -g homebridge-gpio-device-autom --unsafe-perm`
 6. Update your configuration file. See bellow for a sample.
 
 # Wiring
