@@ -1,28 +1,27 @@
 {
-  "name": "homebridge-gpio-device",
-  "version": "0.4.10",
-  "description": "Homebridge plugin exposing devices plugged on GPIO",
+  "name": "homebridge-gpio-device-autom",
+  "version": "0.4.9",
+  "description": "Homebridge plugin exposing GPIO devices as HomeKit accessories, extended to be visible to Apple Home automations (fork of homebridge-gpio-device)",
   "main": "index.js",
-  "scripts": {
-    "prepublishOnly": "npm version patch --m 'Release %s'"
-  },
   "keywords": [
     "homebridge-plugin",
-    "gpio"
+    "gpio",
+    "homekit",
+    "automation"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/dubocr/homebridge-gpio-device.git"
+    "url": "git+https://github.com/piotranonimowy/homebridge-gpio-device-autom.git"
   },
   "bugs": {
-    "url": "http://github.com/dubocr/homebridge-gpio-device/issues"
+    "url": "https://github.com/piotranonimowy/homebridge-gpio-device-autom/issues"
   },
   "engines": {
     "node": ">=0.12.0",
     "homebridge": ">=0.2.0"
   },
-  "homepage": "https://github.com/dubocr/homebridge-gpio-device#readme",
-  "author": "Romain DUBOC",
+  "homepage": "https://github.com/piotranonimowy/homebridge-gpio-device-autom#readme",
+  "author": "piotranonimowy",
   "license": "ISC",
   "dependencies": {
     "onoff": "~6.0.1"
