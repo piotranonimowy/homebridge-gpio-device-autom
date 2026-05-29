@@ -1,6 +1,6 @@
 {
   "name": "homebridge-gpio-device-autom",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "Homebridge plugin exposing GPIO devices as HomeKit accessories, extended to be visible to Apple Home automations (fork of homebridge-gpio-device)",
   "main": "index.js",
   "keywords": [
